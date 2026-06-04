@@ -468,7 +468,7 @@ BOOL mintConvertScanCodeToASCIICode(BYTE bScanCode, BYTE *pbASCIICode,
 		*pbASCIICode = KEY_PAUSE;
 		*pbFlags = KEY_FLAGS_DOWN;
 		gs_stKeyboardManager.iSkipCountForPause =
-			KEY_SKIPCOUNTER_FOR_PAUSE;
+			KEY_SKIPCOUNT_FOR_PAUSE;
 		return TRUE;
 	}
 	// 확장 키코드 처리
