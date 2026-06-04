@@ -62,6 +62,7 @@ void Main(void)
 		while (1);
 	}
 
+	screenline++;
 	while (1) {
 		if (mintIsOutputBufferFull() == TRUE) {
 			// 출력 버퍼(포트 0x60)에서 스캔 코드를 읽어서 저장
@@ -72,7 +73,7 @@ void Main(void)
 				if (bFlags & KEY_FLAGS_DOWN) {
 					if (vcTemp[0] >= 0x21 &&
 					    vcTemp[0] <= 0x7E) {
-						mintPrintString(i++, 16, vcTemp,
+						mintPrintString(i++, screenline, vcTemp,
 								0x07);
 					}
 					if (vcTemp[0] == '0') {
