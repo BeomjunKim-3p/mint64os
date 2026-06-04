@@ -3,6 +3,7 @@
 #include "Descriptor.h"
 #include "Keyboard.h"
 #include "Types.h"
+#include "Utility.h"
 
 #define SUCCESSCOLOR 0x0A
 #define ERRORCOLOR 0x0C
@@ -10,8 +11,6 @@
 #define FAILCOLOR 0x0C
 #define TEXTCOLOR 0x0F
 
-BOOL mintPrintString(int iX, int iY, const char *pcString, BYTE Attribute);
-void itoa(int n, char str[]);
 
 const char *SuccessMsg = "[Success]";
 const char *ErrorMsg = "[Error]";
@@ -22,7 +21,8 @@ BYTE screenline;
 
 void Main(void)
 {
-	screenline = *((BYTE *)0x90000);
+	//screenline = *((BYTE *)0x90000);
+    screenline = 14;
 
 	char vcTemp[2] = {
 		0,
@@ -36,7 +36,7 @@ void Main(void)
 	mintPrintString(1, ++screenline, "IA-32e C Language Kernel Started",
 			TEXTCOLOR);
 
-/*	mintPrintString(1, ++screenline,
+	mintPrintString(1, ++screenline,
 			"GDT Initialize And Switch For IA-32e Mode", TEXTCOLOR);
 	mintInitializeGDTTableAndTSS();
 	mintLoadGDTR(GDTR_STARTADDRESS);
@@ -49,7 +49,7 @@ void Main(void)
 	mintPrintString(1, ++screenline, "IDT Initialize", TEXTCOLOR);
 	mintInitializeIDTTable();
 	mintLoadIDTR(IDTR_STARTADDRESS);
-	mintPrintString(73, screenline, PassMsg, PASSCOLOR);*/
+	mintPrintString(73, screenline, PassMsg, PASSCOLOR);
 
 	mintPrintString(1, ++screenline, "Keyboard Activate", TEXTCOLOR);
 
@@ -84,58 +84,7 @@ void Main(void)
 	}
 }
 
-BOOL mintPrintString(int iX, int iY, const char *pcString, BYTE Attribute)
-{
-	CHARACTER *pstScreen = (CHARACTER *)0xB8000;
-	int i;
 
-	if (iX >= 80 || iY >= 25) {
-		return FALSE;
-	}
-
-	pstScreen += (iY * 80) + iX;
-	for (i = 0; pcString[i] != 0; i++) {
-		pstScreen[i].bCharactor = pcString[i];
-		pstScreen[i].bAttribute = Attribute;
-	}
-	return TRUE;
-}
-
-void itoa(int n, char str[])
-{
-	int i = 0;
-	BOOL isNegative = FALSE;
-
-	if (n == 0) {
-		str[i++] = '0';
-		str[i] = '\0';
-		return;
-	}
-	if (n < 0) {
-		isNegative = TRUE;
-		n = -n;
-	}
-	while (n != 0) {
-		int rem = n % 10;
-		str[i++] = rem + '0';
-		n = n / 10;
-	}
-	if (isNegative) {
-		str[i++] = '-';
-	}
-	str[i] = '\0';
-
-	// 문자열을 뒤집음
-	int start = isNegative ? 1 : 0;
-	int end = i - 1;
-	while (start < end) {
-		char temp = str[start];
-		str[start] = str[end];
-		str[end] = temp;
-		start++;
-		end--;
-	}
-}
 #else /** original */
 
 /** Main.c */

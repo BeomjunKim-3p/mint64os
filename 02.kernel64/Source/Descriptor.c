@@ -1,7 +1,6 @@
 #include "Descriptor.h"
 #include "Utility.h"
 
-void mintPrintString(int x, int y, const char* str);
 
 // GDT 및 TSS
 
@@ -113,6 +112,11 @@ void mintSetIDTEntry(IDTENTRY *pstEntry, void *pvHandler, WORD wSelector,
 // 더미 핸들러
 void mintDummyHandler(void)
 {
+        mintPrintString(0, 0, "********************************************************************************", 0x07);
+        mintPrintString(0, 1, "                                                                                ", 0x07);
+        mintPrintString(0, 2, "                         Dummy Interrupt Handler Called                         ", 0x07);
+        mintPrintString(0, 3, "                                                                                ", 0x07);
+        mintPrintString(0, 4, "********************************************************************************", 0x07);
         // 아무것도 하지 않음
         while(1);
 }

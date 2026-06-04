@@ -7,5 +7,7 @@
 void mintMemSet(void *pvDestination, BYTE bData, int iSize);
 int mintMemCpy(void *pvDestination, const void *pvSource, int iSize);
 int mintMemCmp(const void *pvDestination, const void *pvSource, int iSize);
+BOOL mintPrintString(int iX, int iY, const char *pcString, BYTE Attribute);
+void itoa(int n, char str[]);
 
 #endif /* __UTILITY_H__ */

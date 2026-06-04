@@ -14,14 +14,14 @@ set(CMAKE_C_FLAGS_DEBUG "-O3 -g")
 set(CMAKE_ASM_NASM_COMPILE_OBJECT "<CMAKE_ASM_NASM_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -MD <OBJECT>.d -MT <OBJECT> -o <OBJECT> <SOURCE>")
 
 # --- 도구 경로 설정 (사용자 환경에 맞춰 수정 필요) ---
-set(CROSS_COMPILE_PATH "/usr/cross/bin/x86_64-pc-linux-")
-set(CC32 "gcc")
+set(CROSS_COMPILE_PATH "")
+set(CC32 "clang")
 set(LD32 "ld")
-set(OC32 "objcopy")
+set(OC32 "llvm-objcopy")
 
-set(CC64 "gcc")
+set(CC64 "clang")
 set(LD64 "ld")
-set(OC64 "objcopy")
+set(OC64 "llvm-objcopy")
 
 # --- ImageMaker 빌드 (네이티브 호스트 컴파일) ---
 # ImageMaker는 빌드 시간에만 호스트에서 실행되는 유틸리티
