@@ -21,7 +21,7 @@ char TempBuffer[20] = {
 // Main 함수
 void Main(void)
 {
-	__asm__ __volatile__("mov %%dx, %0" : "=m"(screenline) : : "dx");
+	//__asm__ __volatile__("mov %%dx, %0" : "=m"(screenline) : : "dx");
 	/* 심심해서 만든거
 	BYTE* Screen = (BYTE*) 0xB8000;
 	for ( int i = 0 ; i < 2 ; i++ )
@@ -64,6 +64,7 @@ void Main(void)
 	        0,
 	};
 
+	screenline = 4;
 	mintPrintString(1, (int)(++screenline) /*line 5*/,
 	                "Protected Mode C Language Kernel Started", 0x0F);
 
