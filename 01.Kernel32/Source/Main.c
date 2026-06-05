@@ -98,6 +98,8 @@ void Main(void)
 		        1, (int)(++screenline) /*line 8*/,
 		        "Kernel Area Initialization Failed. System Halted.",
 		        0x0F);
+		while (1)
+			;
 		while (1);
 	}
 
@@ -136,7 +138,8 @@ void Main(void)
 		                "This processor does not support 64bit Mode. "
 		                "System Halted.",
 		                0x0F);
-		while (1);
+		while (1)
+			;
 	}
 
 	mintPrintString(1, (int)(++screenline) /*line 11*/,
@@ -150,5 +153,133 @@ void Main(void)
 	BYTE *screenLineSwitchPtr = (BYTE *)0x90000;
 	*screenLineSwitchPtr = screenline;
 	mintSwitchAndExecute64bitKernel();
+
+	while (1);
 }
 
+const char *SuccessMsg = "[Success]";
+const char *ErrorMsg = "[Error]";
+const char *PassMsg = "[Pass]";
+const char *FailMsg = "[Fail]";
+
+void itoa(int n, char str[])
+{
+	int i = 0;
+	BOOL isNegative = FALSE;
+
+	if (n == 0) {
+		str[i++] = '0';
+		str[i] = '\0';
+		return;
+	}
+	if (n < 0) {
+		isNegative = TRUE;
+		n = -n;
+	}
+	while (n != 0) {
+		int rem = n % 10;
+		str[i++] = rem + '0';
+		n = n / 10;
+	}
+	if (isNegative) {
+		str[i++] = '-';
+	}
+	str[i] = '\0';
+
+	// 문자열을 뒤집음
+	int start = (isNegative) ? 1 : 0;
+	int end = i - 1;
+	while (start < end) {
+		char temp = str[start];
+		str[start] = str[end];
+		str[end] = temp;
+		start++;
+		end--;
+	}
+}
+
+// 문자열 출력 함수
+BOOL mintPrintString(int iX, int iY, const char *pcString, BYTE Attribute)
+{
+	CHARACTER *pstScreen = (CHARACTER *)0xB8000;
+	int i;
+
+	if (iX >= 80 || iY >= 25) {
+		return FALSE;
+	}
+
+	pstScreen += (iY * 80) + iX;
+	for (i = 0; pcString[i] != 0; i++) {
+		pstScreen[i].bCharactor = pcString[i];
+		pstScreen[i].bAttribute = Attribute;
+	}
+	return TRUE;
+}
+
+BOOL mintInitializeKernel64Area(void)
+{
+	DWORD *pdwCurrentAddress;
+
+	// 초기화를 시작할 주소인 0x100000(1MB)를 설정
+	pdwCurrentAddress = (DWORD *)0x100000;
+
+	// 마지막 주소인 0x600000(6MB)까지 반복하면서 4바이트씩 0으로 채움
+	while ((DWORD)pdwCurrentAddress < 0x600000) {
+		*pdwCurrentAddress = 0x00;
+
+		// 0으로 저장한 후 다시 읽었을 때 0이 나오지 않으면 해당 주소를
+		// 사용하는데 문제가 생긴 것이므로 더이상 진행하지 않고 종료
+		if (*pdwCurrentAddress != 0) {
+			return FALSE;
+		}
+
+		// 다음 주소로 이동
+		pdwCurrentAddress++;
+	}
+	return TRUE;
+}
+
+BOOL mintIsMemoryEnough(void)
+{
+	DWORD *pdwCurrentAddress;
+#define MEMORY_TEST_PATTERN 0x15871308
+
+	// 0x100000(1MB)부터 검사 시작
+	pdwCurrentAddress = (DWORD *)0x100000;
+
+	// 0x4000000(64MB)까지 검사
+	while ((DWORD)pdwCurrentAddress < 0x4000000) {
+		*pdwCurrentAddress = MEMORY_TEST_PATTERN;
+
+		// 메모리에 정상적으로 저장되었는지 확인
+		if (*pdwCurrentAddress != MEMORY_TEST_PATTERN) {
+			return FALSE;
+		}
+
+		// 16바이트(4 DWORDs)씩 이동
+		pdwCurrentAddress += (0x100000 / 4);
+	}
+	return TRUE;
+}
+
+void mintCopyKernel64ImageTo2MB(void)
+{
+	WORD wKernel32SectorCount, wTotalKernelSectorCount;
+	DWORD *pdwSourceAddress, *pdwDestinationAddress;
+	int i;
+
+	// 0x7C05에 총 커널 섹터 수, 0x7C07에 보호 모드 커널 섹터 수가 들어있음
+	wTotalKernelSectorCount = *((WORD *)0x7C05);
+	wKernel32SectorCount = *((WORD *)0x7C07);
+
+	pdwSourceAddress = (DWORD *)(0x10000 + (wKernel32SectorCount * 512));
+	pdwDestinationAddress = (DWORD *)0x200000;
+	// IA-32e 모드 커널 섹터 크기만큼 복사
+	for (i = 0;
+	     i < 512 * (wTotalKernelSectorCount - wKernel32SectorCount) / 4;
+	     i++) {
+		*pdwDestinationAddress = *pdwSourceAddress;
+		pdwDestinationAddress++;
+		pdwSourceAddress++;
+	}
+}
