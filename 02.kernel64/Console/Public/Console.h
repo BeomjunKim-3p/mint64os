@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 #ifndef __CONSOLE_H__
 #define __CONSOLE_H__
 
