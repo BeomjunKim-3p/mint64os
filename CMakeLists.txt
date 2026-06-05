@@ -22,6 +22,8 @@ set(OC32 "llvm-objcopy")
 set(CC64 "clang")
 set(LD64 "ld")
 set(OC64 "llvm-objcopy")
+# 링커 옵션에 전역으로 lld 사용하도록 설정
+add_link_options("-fuse-ld=lld")
 
 # --- ImageMaker 빌드 (네이티브 호스트 컴파일) ---
 # ImageMaker는 빌드 시간에만 호스트에서 실행되는 유틸리티
