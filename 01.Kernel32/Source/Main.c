@@ -1,194 +1,154 @@
-/**
- *  file    Main.c
- *  date    2008/12/14
- *  author  kkamagui 
- *          Copyright(c)2008 All rights reserved by kkamagui
- *  brief   C 언어로 작성된 커널의 엔트리 포인트 파일
- */
-
-#include "Types.h"
-#include "Page.h"
 #include "ModeSwitch.h"
+#include "Page.h"
+#include "Types.h"
 
-// 함수 선언
-void mintPrintString( int iX, int iY, const char* pcString );
-BOOL mintInitializeKernel64Area( void );
-BOOL mintIsMemoryEnough( void );
-void mintCopyKernel64ImageTo2Mbyte( void );
+BOOL mintPrintString(int iX, int iY, const char *pcString, BYTE Attribute);
+BOOL mintInitializeKernel64Area(void);
+BOOL mintIsMemoryEnough(void);
+void mintCopyKernel64ImageTo2MB(void);
 
-/**
- *  아래 함수는 C 언어 커널의 시작 부분임
- *      반드시 다른 함수들 보다 가장 앞쪽에 존재해야 함
- */
-void Main( void )
+void itoa(int n, char str[]);
+BYTE screenline;
+
+const char *SuccessMsg;
+const char *ErrorMsg;
+const char *PassMsg;
+const char *FailMsg;
+char TempBuffer[20] = {
+        0,
+};
+
+// Main 함수
+void Main(void)
 {
-    DWORD i;
-    DWORD dwEAX, dwEBX, dwECX, dwEDX;
-    char vcVendorString[ 13 ] = { 0, };
-    
-    mintPrintString( 0, 3, "Protected Mode C Language Kernel Start......[Pass]" );
-    
-    // 최소 메모리 크기를 만족하는 지 검사
-    mintPrintString( 0, 4, "Minimum Memory Size Check...................[    ]" );
-    if( mintIsMemoryEnough() == FALSE )
-    {
-        mintPrintString( 45, 4, "Fail" );
-        mintPrintString( 0, 5, "Not Enough Memory~!! MINT64 OS Requires Over "
-                "64Mbyte Memory~!!" );
-        while( 1 ) ;
-    }
-    else
-    {
-        mintPrintString( 45, 4, "Pass" );
-    }
-    
-    // IA-32e 모드의 커널 영역을 초기화
-    mintPrintString( 0, 5, "IA-32e Kernel Area Initialize...............[    ]" );
-    if( mintInitializeKernel64Area() == FALSE )
-    {
-        mintPrintString( 45, 5, "Fail" );
-        mintPrintString( 0, 6, "Kernel Area Initialization Fail~!!" );
-        while( 1 ) ;
-    }
-    mintPrintString( 45, 5, "Pass" );
+	//__asm__ __volatile__("mov %%dx, %0" : "=m"(screenline) : : "dx");
+	/* 심심해서 만든거
+	BYTE* Screen = (BYTE*) 0xB8000;
+	for ( int i = 0 ; i < 2 ; i++ )
+	{
+	    for ( int j = 0 ; j < 8 ; j++ )
+	    {
+	        Screen[( 80*17 + i * 80 + j ) * 2] = 0xB0;
+	        Screen[( 80*17 + i * 80 + j ) * 2 + 1] = (BYTE)( i * 8 + j );
+	    }
+	}
+	for ( int i = 0 ; i < 2 ; i++ )
+	{
+	    for ( int j = 0 ; j < 8 ; j++ )
+	    {
+	        Screen[( 80*19 + i * 80 + j ) * 2] = 0xB1;
+	        Screen[( 80*19 + i * 80 + j ) * 2 + 1] = (BYTE)( i * 8 + j );
+	    }
+	}
+	for ( int i = 0 ; i < 2 ; i++ )
+	{
+	    for ( int j = 0 ; j < 8 ; j++ )
+	    {
+	        Screen[( 80*21 + i * 80 + j ) * 2] = 0xB2;
+	        Screen[( 80*21 + i * 80 + j ) * 2 + 1] = (BYTE)( i * 8 + j );
+	    }
+	}
+	for ( int i = 0 ; i < 2 ; i++ )
+	{
+	    for ( int j = 0 ; j < 8 ; j++ )
+	    {
+	        Screen[( 80*23 + i * 80 + j ) * 2] = 0xDB;
+	        Screen[( 80*23 + i * 80 + j ) * 2 + 1] = (BYTE)( i * 8 + j );
+	    }
+	}
+	*/
 
-    // IA-32e 모드 커널을 위한 페이지 테이블 생성
-    mintPrintString( 0, 6, "IA-32e Page Tables Initialize...............[    ]" );
-    mintInitializePageTables();
-    mintPrintString( 45, 6, "Pass" );
-    
-    // 프로세서 제조사 정보 읽기
-    mintReadCPUID( 0x00, &dwEAX, &dwEBX, &dwECX, &dwEDX );
-    *( DWORD* ) vcVendorString = dwEBX;
-    *( ( DWORD* ) vcVendorString + 1 ) = dwEDX;
-    *( ( DWORD* ) vcVendorString + 2 ) = dwECX;
-    mintPrintString( 0, 7, "Processor Vendor String.....................[            ]" );
-    mintPrintString( 45, 7, vcVendorString );
-    
-    // 64비트 지원 유무 확인
-    mintReadCPUID( 0x80000001, &dwEAX, &dwEBX, &dwECX, &dwEDX );
-    mintPrintString( 0, 8, "64bit Mode Support Check....................[    ]" );
-    if( dwEDX & ( 1 << 29 ) )
-    {
-        mintPrintString( 45, 8, "Pass" );
-    }
-    else
-    {
-        mintPrintString( 45, 8, "Fail" );
-        mintPrintString( 0, 9, "This processor does not support 64bit mode~!!" );
-        while( 1 ) ;
-    }
-    
-    // IA-32e 모드 커널을 0x200000(2Mbyte) 어드레스로 이동
-    mintPrintString( 0, 9, "Copy IA-32e Kernel To 2M Address............[    ]" );
-    mintCopyKernel64ImageTo2Mbyte();
-    mintPrintString( 45, 9, "Pass" );
-    
-    // IA-32e 모드로 전환
-    mintPrintString( 0, 10, "Switch To IA-32e Mode" );
-    mintSwitchAndExecute64bitKernel();
-    
-    while( 1 ) ;
+	// DWORD i;
+	DWORD dwEAX, dwEBX, dwECX, dwEDX;
+	char vcVendorString[13] = {
+	        0,
+	};
+
+	screenline = 4;
+	mintPrintString(1, (int)(++screenline) /*line 5*/,
+	                "Protected Mode C Language Kernel Started", 0x0F);
+
+	// 최소 메모리 크기를 만족하는 지 검사
+	mintPrintString(1, (int)(++screenline) /*line 6*/,
+	                "Minimum Memory Size Check", 0x0F);
+	if (mintIsMemoryEnough() == FALSE) {
+		mintPrintString(73, (int)screenline /*line 6*/, FailMsg, 0x0C);
+		mintPrintString(1, (int)(++screenline) /*line 7*/,
+		                "Not Enough Memory. MINT64 OS Requires over "
+		                "64MB. System Halted.",
+		                0x0F);
+		mintPrintString(1, (int)(++screenline) /*line 8*/,
+		                "TODO: Make PM(<64MB) support", 0x0A);
+
+		while (1)
+			;
+	} else {
+		mintPrintString(73, (int)screenline /*line 6*/, PassMsg, 0x0A);
+	}
+
+	// IA-32e 모드의 커널 영역 초기화
+	mintPrintString(1, (int)(++screenline) /*line 7*/,
+	                "IA-32e Kernel Area Initializing", 0x0F);
+	if (mintInitializeKernel64Area()) {
+		mintPrintString(70, (int)screenline /*line 7*/, SuccessMsg,
+		                0x0A);
+	} else {
+		mintPrintString(72, (int)screenline /*line 7*/, ErrorMsg, 0x0C);
+		mintPrintString(
+		        1, (int)(++screenline) /*line 8*/,
+		        "Kernel Area Initialization Failed. System Halted.",
+		        0x0F);
+		while (1);
+	}
+
+	// IA-32e 모드 커널 위한 페이지 테이블 생성
+	mintPrintString(1, (int)(++screenline) /*line 8*/,
+	                "IA-32e Page Tables Initializing", 0x0F);
+	mintInitializePageTables();
+	mintPrintString(70, (int)screenline /*line 8*/, SuccessMsg, 0x0A);
+
+	// 프로세서 제조사 정보 읽기
+	mintReadCPUID(0x00, &dwEAX, &dwEBX, &dwECX, &dwEDX);
+	*((DWORD *)vcVendorString) = dwEBX;
+	*((DWORD *)vcVendorString + 1) = dwEDX;
+	*((DWORD *)vcVendorString + 2) = dwECX;
+
+	TempBuffer[0] = '[';
+	*(DWORD *)(TempBuffer + 1) = dwEBX;
+	*(DWORD *)(TempBuffer + 5) = dwEDX;
+	*(DWORD *)(TempBuffer + 9) = dwECX;
+	TempBuffer[13] = ']';
+	TempBuffer[14] = '\0'; // 문자열 종료
+
+	mintPrintString(1, (int)(++screenline) /*line 9*/,
+	                "Processor Vender String", 0x0F);
+	mintPrintString(65, (int)screenline /*line 9*/, TempBuffer, 0x0F);
+
+	// 64비트 지원 유무 확인
+	mintReadCPUID(0x80000001, &dwEAX, &dwEBX, &dwECX, &dwEDX);
+	mintPrintString(1, (int)(++screenline) /*line 10*/,
+	                "64bit Mode Support Check", 0x0F);
+	if (dwEDX & (1 << 29)) {
+		mintPrintString(73, (int)screenline /*line 10*/, PassMsg, 0x0A);
+	} else {
+		mintPrintString(72, (int)screenline /*line 10*/, FailMsg, 0x0C);
+		mintPrintString(1, (int)(++screenline) /*line 11*/,
+		                "This processor does not support 64bit Mode. "
+		                "System Halted.",
+		                0x0F);
+		while (1);
+	}
+
+	mintPrintString(1, (int)(++screenline) /*line 11*/,
+	                "Copy IA-32e Kernel to 2MB Address", 0x0F);
+	mintCopyKernel64ImageTo2MB();
+	mintPrintString(70, (int)screenline /*line 11*/, SuccessMsg, 0x0A);
+
+	// IA-32e 모드로 전환
+	mintPrintString(1, (int)(++screenline) /*line 11*/,
+	                "Switching To IA-32e Mode", 0x0F);
+	BYTE *screenLineSwitchPtr = (BYTE *)0x90000;
+	*screenLineSwitchPtr = screenline;
+	mintSwitchAndExecute64bitKernel();
 }
 
-/**
- *  문자열을 X, Y 위치에 출력
- */
-void mintPrintString( int iX, int iY, const char* pcString )
-{
-    CHARACTER* pstScreen = ( CHARACTER* ) 0xB8000;
-    int i;
-    
-    // X, Y 좌표를 이용해서 문자열을 출력할 어드레스를 계산
-    pstScreen += ( iY * 80 ) + iX;
-    
-    // NULL이 나올 때까지 문자열 출력
-    for( i = 0 ; pcString[ i ] != 0 ; i++ )
-    {
-        pstScreen[ i ].bCharactor = pcString[ i ];
-    }
-}
-
-/**
- *  IA-32e 모드용 커널 영역을 0으로 초기화
- *      1Mbyte ~ 6Mbyte까지 영역을 초기화
- */
-BOOL mintInitializeKernel64Area( void )
-{
-    DWORD* pdwCurrentAddress;
-    
-    // 초기화를 시작할 어드레스인 0x100000(1MB)을 설정
-    pdwCurrentAddress = ( DWORD* ) 0x100000;
-    
-    // 마지막 어드레스인 0x600000(6MB)까지 루프를 돌면서 4바이트씩 0으로 채움
-    while( ( DWORD ) pdwCurrentAddress < 0x600000 )
-    {        
-        *pdwCurrentAddress = 0x00;
-
-        // 0으로 저장한 후 다시 읽었을 때 0이 나오지 않으면 해당 어드레스를 
-        // 사용하는데 문제가 생긴 것이므로 더이상 진행하지 않고 종료
-        if( *pdwCurrentAddress != 0 )
-        {
-            return FALSE;
-        }
-        
-        // 다음 어드레스로 이동
-        pdwCurrentAddress++;
-    }
-    
-    return TRUE;
-}
-
-/**
- *  MINT64 OS를 실행하기에 충분한 메모리를 가지고 있는지 체크
- *      64Mbyte 이상의 메모리를 가지고 있는지 검사
- */
-BOOL mintIsMemoryEnough( void )
-{
-    DWORD* pdwCurrentAddress;
-   
-    // 0x100000(1MB)부터 검사 시작
-    pdwCurrentAddress = ( DWORD* ) 0x100000;
-    
-    // 0x4000000(64MB)까지 루프를 돌면서 확인
-    while( ( DWORD ) pdwCurrentAddress < 0x4000000 )
-    {
-        *pdwCurrentAddress = 0x12345678;
-        
-        // 0x12345678로 저장한 후 다시 읽었을 때 0x12345678이 나오지 않으면 
-        // 해당 어드레스를 사용하는데 문제가 생긴 것이므로 더이상 진행하지 않고 종료
-        if( *pdwCurrentAddress != 0x12345678 )
-        {
-           return FALSE;
-        }
-        
-        // 1MB씩 이동하면서 확인
-        pdwCurrentAddress += ( 0x100000 / 4 );
-    }
-    return TRUE;
-}
-
-/**
- *  IA-32e 모드 커널을 0x200000(2Mbyte) 어드레스에 복사
- */
-void mintCopyKernel64ImageTo2Mbyte( void )
-{
-    WORD wKernel32SectorCount, wTotalKernelSectorCount;
-    DWORD* pdwSourceAddress,* pdwDestinationAddress;
-    int i;
-    
-    // 0x7C05에 총 커널 섹터 수, 0x7C07에 보호 모드 커널 섹터 수가 들어 있음
-    wTotalKernelSectorCount = *( ( WORD* ) 0x7C05 );
-    wKernel32SectorCount = *( ( WORD* ) 0x7C07 );
-
-    pdwSourceAddress = ( DWORD* ) ( 0x10000 + ( wKernel32SectorCount * 512 ) );
-    pdwDestinationAddress = ( DWORD* ) 0x200000;
-    // IA-32e 모드 커널 섹터 크기만큼 복사
-    for( i = 0 ; i < 512 * ( wTotalKernelSectorCount - wKernel32SectorCount ) / 4;
-        i++ )
-    {
-        *pdwDestinationAddress = *pdwSourceAddress;
-        pdwDestinationAddress++;
-        pdwSourceAddress++;
-    }
-}
