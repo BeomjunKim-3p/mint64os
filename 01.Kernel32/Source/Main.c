@@ -98,8 +98,7 @@ void Main(void)
 		        1, (int)(++screenline) /*line 8*/,
 		        "Kernel Area Initialization Failed. System Halted.",
 		        0x0F);
-		while (1)
-			;
+		while (1);
 	}
 
 	// IA-32e 모드 커널 위한 페이지 테이블 생성
