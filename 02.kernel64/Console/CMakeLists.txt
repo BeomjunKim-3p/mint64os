@@ -20,6 +20,8 @@ target_include_directories(Console
 )
 
 target_link_libraries(Console
+	PUBLIC
+		K64_Core
 	PRIVATE
 		Keyboard
 )

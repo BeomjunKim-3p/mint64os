@@ -21,14 +21,8 @@ set(K64_HEADERS
 	Private/Descriptor.h 
 )
 
-add_subdirectory(Keyboard)
-add_subdirectory(Console)
 
-set(K64_MODULES
-	Console
-)
-
-add_library(K64_Core OBJECT
+add_library(K64_Core STATIC
 	${K64_SOURCES}
 	${K64_HEADERS}
 )
@@ -45,32 +39,47 @@ target_include_directories(K64_Core
 		${CMAKE_CURRENT_SOURCE_DIR}/Private
 )
 
+add_subdirectory(Keyboard)
+add_subdirectory(Console)
+
+set(K64_MODULES
+	Console
+	Keyboard
+)
+
 target_link_libraries(K64_Core PRIVATE ${K64_MODULES})
 
 # EntryPoint.s를 별도로 빌드 (NASM)
 add_custom_command(
     OUTPUT EntryPoint.o
-    COMMAND nasm -f elf64 -o EntryPoint.o ${CMAKE_CURRENT_SOURCE_DIR}/EntryPoint.s
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/EntryPoint.s
+    COMMAND nasm -f elf64 -o EntryPoint.o ${CMAKE_CURRENT_SOURCE_DIR}/Private/EntryPoint.s
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Private/EntryPoint.s
     COMMENT "Building EntryPoint.o for Kernel64"
 )
 
-add_executable(Kernel64_Elf EntryPoint.o)
-target_link_libraries(Kernel64_Elf PRIVATE K64_Core ${K64_MODULES})
-
-# 링커 스크립트 및 커널 옵션 적용
-target_link_options(Kernel64_Elf PRIVATE 
-    "-melf_x86_64"
-    "-T${CMAKE_CURRENT_SOURCE_DIR}/elf_x86_64.x"
-    "-nostdlib"
-    "-eMain"
-    "-Ttext=0x200000"
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Kernel64.Elf
+    COMMAND gcc -m64 -nostdlib
+    	    -Wl,-melf_x86_64 
+            -T ${CMAKE_CURRENT_SOURCE_DIR}/elf_x86_64.x 
+            -e Main -Ttext 0x200000 
+            -o ${CMAKE_CURRENT_BINARY_DIR}/Kernel64.Elf
+            ${CMAKE_CURRENT_BINARY_DIR}/EntryPoint.o
+            -Wl,--start-group
+            ${CMAKE_CURRENT_BINARY_DIR}/libK64_Core.a
+            ${CMAKE_CURRENT_BINARY_DIR}/Console/libConsole.a
+            ${CMAKE_CURRENT_BINARY_DIR}/Keyboard/libKeyboard.a
+            -Wl,--end-group
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/EntryPoint.o K64_Core Console Keyboard
+    COMMENT "Linking Kernel64.Elf with custom command..."
 )
 
+# 3) 최종 Kernel64.bin 바이너리 추출
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Kernel64.bin
-    COMMAND ${OC64} -j .text -j .data -j .rodata -j .bss -S -O binary Kernel64_Elf ${CMAKE_CURRENT_BINARY_DIR}/Kernel64.bin
-    DEPENDS Kernel64_Elf
+    COMMAND ${OC64} -j .text -j .data -j .rodata -j .bss -S -O binary ${CMAKE_CURRENT_BINARY_DIR}/Kernel64.Elf ${CMAKE_CURRENT_BINARY_DIR}/Kernel64.bin
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Kernel64.Elf
+    COMMENT "Generating final Kernel64.bin..."
 )
 
 add_custom_target(Kernel64 DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Kernel64.bin)

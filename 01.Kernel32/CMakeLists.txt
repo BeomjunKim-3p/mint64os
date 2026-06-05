@@ -1,4 +1,4 @@
-set(CC32ARG "-c -m32 -ffreestanding -g -nostdlib")
+set(CC32ARG "-c;-m32;-ffreestanding;-g;-nostdlib")
 
 set(CC32 "${CC32};${CC32ARG}")
 set(LD32 "${LD32};-melf_i386;-T;${CMAKE_CURRENT_SOURCE_DIR}/elf_i386.x;-nostdlib;-e;Main;-Ttext;0x10400")
