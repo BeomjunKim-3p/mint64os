@@ -1,6 +1,6 @@
 #include "Keyboard.h"
-#include "AssemblyUtility.h"
-#include "Types.h"
+#include "../AssemblyUtility.h"
+#include "../Types.h"
 
 BOOL mintIsOutputBufferFull(void)
 {

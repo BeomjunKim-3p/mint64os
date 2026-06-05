@@ -1,4 +1,6 @@
-set(CC32 "${CC32};-c;-m32;-ffreestanding")
+set(CC32ARG "-c -m32 -ffreestanding -g -nostdlib")
+
+set(CC32 "${CC32};${CC32ARG}")
 set(LD32 "${LD32};-melf_i386;-T;${CMAKE_CURRENT_SOURCE_DIR}/elf_i386.x;-nostdlib;-e;Main;-Ttext;0x10400")
 set(OC32 "${OC32};-j;.text;-j;.data;-j;.rodata;-j;.bss;-S;-O;binary")
 
@@ -28,8 +30,8 @@ add_library(K32_Objs OBJECT ${K32_CSOURCES} ${K32_ASOURCES})
 # C 파일 및 ASM 파일에 대한 세부 옵션 설정
 
 target_compile_options(K32_Objs PRIVATE 
-    $<$<COMPILE_LANGUAGE:C>:-m32 -ffreestanding -g -nostdlib>
-    $<$<COMPILE_LANGUAGE:ASM_NASM>:-f;elf32>
+	$<$<COMPILE_LANGUAGE:C>:${CC32ARG}>
+	$<$<COMPILE_LANGUAGE:ASM_NASM>:-f;elf32>
 )
 
 
