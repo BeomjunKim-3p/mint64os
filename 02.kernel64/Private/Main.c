@@ -4,6 +4,7 @@
 #include "Keyboard.h"
 #include "Types.h"
 #include "Utility.h"
+#include "Console.h"
 
 #define SUCCESSCOLOR 0x0A
 #define ERRORCOLOR 0x0C
