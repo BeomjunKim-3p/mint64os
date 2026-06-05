@@ -20,6 +20,8 @@ target_include_directories(Keyboard
 )
 
 target_link_libraries(Keyboard
+	PUBLIC
+		K64_Core
 )
 
 target_compile_options(Keyboard PRIVATE 
