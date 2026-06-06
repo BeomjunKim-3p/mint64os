@@ -37,5 +37,11 @@ jobs:
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build 
 
+    - name: CMake Build upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: cmake-build-artifacts  # 다운로드할 때 표시될 압축파일 이름
+        path: build/
+
 
 
