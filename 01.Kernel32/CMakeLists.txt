@@ -20,8 +20,15 @@ add_custom_command(
 
 
 # 2. 소스 파일 수집
-file(GLOB_RECURSE K32_CSOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Source/*.c")
-file(GLOB_RECURSE K32_ASOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Source/*.asm")
+#file(GLOB_RECURSE K32_CSOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Source/*.c")
+#file(GLOB_RECURSE K32_ASOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Source/*.asm")
+set(K32_ASOURCES 
+	${CMAKE_CURRENT_SOURCE_DIR}/Source/ModeSwitch.asm
+)
+set(K32_CSOURCES 
+	${CMAKE_CURRENT_SOURCE_DIR}/Source/Main.c 
+	${CMAKE_CURRENT_SOURCE_DIR}/Source/Page.c 
+)
 
 # 3. 커널 오브젝트 빌드
 
